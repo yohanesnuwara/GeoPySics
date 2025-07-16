@@ -1,6 +1,6 @@
-# Computational Geophysics Sandbox
+# GeoPySics
 
-**Python implementations on some geophysical methods**
+GeoPySics is sandbox of Python implementations on geophysics
 
 ## Gravity 
 
