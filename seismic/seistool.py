@@ -2,6 +2,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import pandas as pd
 import segyio
+import pylops
 
 def openSegy3D(filename, iline=189, xline=193):
   """
@@ -1012,3 +1013,153 @@ def extract_geobody(cube, value, range_x, range_y, range_z,
   ax = make_ax(True)
   ax.voxels(x, y, z, cube, facecolor='lime', shade=False, edgecolors='k', linewidth=0.2)
   plt.show()
+
+def frequencySpectrum(cube, mini_range, dt=0.005, nfft=2**11, display=False):
+  """
+  Frequency Spectrum of a Mini-cube using Fast Fourier Transform
+
+  NOTE: This operation can possibly consume lots of RAMs.
+  """
+  # Unwrap cube
+  inline_array, xline_array, timeslice_array = cube.inlines, cube.crosslines, cube.twt
+  data = cube.data
+
+  # Unwrap minicube ranges
+  il0, il1 = mini_range["il"][0], mini_range["il"][1]
+  xl0, xl1 = mini_range["xl"][0], mini_range["xl"][1]
+  ts0, ts1 = mini_range["twt"][0], mini_range["twt"][1]
+
+  # Find indexes
+  il0_id, il1_id = il0-inline_array[0], il1-inline_array[0]
+  xl0_id, xl1_id = xl0-xline_array[0], xl1-xline_array[0]
+  ts0_id = np.where(timeslice_array == ts0)[0][0]
+  ts1_id = np.where(timeslice_array == ts1)[0][0]
+
+  # Make mini cube
+  d = data[il0_id:il1_id+1, xl0_id:xl1_id+1, ts0_id:ts1_id+1]
+
+  wav_est_fft = np.mean(np.abs(np.fft.fft(d, nfft, axis=-1)), axis=(0, 1))
+  fwest = np.fft.fftfreq(nfft, d=dt)
+
+  if display==False:
+    return fwest, wav_est_fft
+
+  if display==True:
+    plt.plot(fwest[:nfft//2], wav_est_fft[:nfft//2], 'k')
+    plt.xlim(min(fwest[:nfft//2]), max(fwest[:nfft//2]))
+    plt.ylim(ymin=0)
+    plt.xlabel('Frequency [Hz]'); plt.ylabel('Amplitude')
+    plt.title('Frequency Spectrum', size=20, pad=10)
+
+def statisticalWavelet(cube, mini_range, dt=0.005, nfft=2**11, nt_wav=41,
+                       display=False):
+  # Frequency spectrum estimation with FFT
+  fwest, wav_est_fft = frequencySpectrum(cube, mini_range)
+
+  # time axis for wavelet
+  t_wav = np.arange(nt_wav) * dt
+  t_wav = np.concatenate((np.flipud(-t_wav[1:]), t_wav), axis=0)
+
+  # Estimate wavelet
+  wav_est = np.real(np.fft.ifft(wav_est_fft)[:nt_wav])
+  wav_est = np.concatenate((np.flipud(wav_est[1:]), wav_est), axis=0)
+  wav_est = wav_est / wav_est.max()
+  wcenter = np.argmax(np.abs(wav_est))
+
+  if display==False:
+    return t_wav, wav_est
+
+  if display==True:
+    plt.plot(t_wav, wav_est, 'k')
+    plt.xlabel('Time [s]'); plt.ylabel('Amplitude')
+    plt.title('Statistical Wavelet', size=20, pad=10)
+
+def slicePostStackInversion(data, type, wav, m0,
+                           explicit=False, simultaneous=False, epsI=None,
+                           epsR=None, dottest=False, epsRL1=None):
+  """
+  Inversion of post-stack seismic data (2D slice) using PyLops engine
+
+  INPUT:
+
+  data: 2D slice of inline, crossline, or timeslice
+
+  type: Specify 'il' (inline), 'xl' (crossline), or 'ts' (timeslice)
+
+  wav: Wavelet (can be statistical wavelet)
+
+  m0: Background or initial model. Must have same dimension with data.
+
+  The next 6 variables are 'pylops.avo.poststack.PoststackInversion' variables:
+    * explicit : :obj:`bool`, optional
+        Create a chained linear operator (``False``, preferred for large data)
+        or a ``MatrixMult`` linear operator with dense matrix
+        (``True``, preferred for small data)
+    * simultaneous : :obj:`bool`, optional
+        Simultaneously invert entire data (``True``) or invert
+        trace-by-trace (``False``) when using ``explicit`` operator
+        (note that the entire data is always inverted when working
+        with linear operator)
+    * epsI : :obj:`float`, optional
+        Damping factor for Tikhonov regularization term
+    * epsR : :obj:`float`, optional
+        Damping factor for additional Laplacian regularization term
+    * dottest : :obj:`bool`, optional
+        Apply dot-test
+    * epsRL1 : :obj:`float`, optional
+        Damping factor for additional blockiness regularization term
+  NOTE: For more details see the original PyLops docs.
+
+  OUTPUT:
+
+  m_relative: Inverted AI (2D numpy array)
+  r_relative: Residual of inverted AI (2D numpy array)
+  """
+  if type=='il':
+    a, b = data.shape
+    data = data.reshape((1,a,b))
+    m0 = m0.reshape((1,a,b))
+
+  if type=='xl':
+    a, b = data.shape
+    data = data.reshape((a,1,b))
+    m0 = m0.reshape((a,1,b))
+
+  # if type=='ts':
+  #   a, b = data.shape
+  #   data = data.reshape((a,b,1))
+  #   m0 = m0.reshape((a,b,1))
+
+  # Swap time axis to first dimension
+  data = np.swapaxes(data, -1, 0)
+  m0 = np.swapaxes(m0, -1, 0)
+
+  # Inversion
+  m_relative, r_relative = \
+      pylops.avo.poststack.PoststackInversion(data, wav,
+                                              m0=m0, explicit=explicit,
+                                              simultaneous=simultaneous,
+                                              epsI=epsI, epsR=epsR,
+                                              dottest=dottest, epsRL1=epsRL1)
+
+  # Swap time axis back to last dimension
+  data = np.swapaxes(data, 0, -1)
+  m_relative = np.swapaxes(m_relative, 0, -1)
+  r_relative = np.swapaxes(r_relative, 0, -1)
+
+  # # Reshaping results
+  # m_relative = m_relative.reshape((data.shape[1], data.shape[2]))
+  # r_relative = r_relative.reshape((data.shape[1], data.shape[2]))
+
+  # Once again swap axis to condition output so that it can be plotted
+  if type=='il':
+    m_relative = np.swapaxes(m_relative, 1, 2)
+    r_relative = np.swapaxes(r_relative, 1, 2)
+  if type=='xl':
+    m_relative = np.swapaxes(m_relative, 0, 2)
+    r_relative = np.swapaxes(r_relative, 0, 2)
+
+  # if type=='ts':
+    # m_relative = np.nan
+
+  return m_relative, r_relative
