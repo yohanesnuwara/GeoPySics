@@ -318,24 +318,9 @@ def local_events(in_data, comparator):
     
     
 def hilbert(in_data):
-    """
-    Description
-    -----------
-    Perform Hilbert Transform on input data
-    
-    Parameters
-    ----------
-    in_data : Dask Array, data to convert
-           
-    Returns
-    -------
-    out : Numpy Array
-    """
-    
     N = in_data.shape[-1]
-    
     Xf = np.fft.fft(in_data, n=N, axis=-1)
-    
+
     h = np.zeros(N)
     if N % 2 == 0:
         h[0] = h[N // 2] = 1
@@ -345,8 +330,12 @@ def hilbert(in_data):
         h[1:(N + 1) // 2] = 2
 
     if in_data.ndim > 1:
-        ind = [np.newaxis] * in_data.ndim
-        ind[-1] = slice(None)
-        h = h[ind]
+        # broadcast h across all leading axes
+        ind = (None,) * (in_data.ndim - 1) + (slice(None),)
+        h = h[ind]                 # tuple indexing works
+
+        # (optional, equivalent)
+        # h = h.reshape((1,) * (in_data.ndim - 1) + (N,))
+
     x = np.fft.ifft(Xf * h, axis=-1)
     return x
