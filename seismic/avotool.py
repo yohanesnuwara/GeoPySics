@@ -40,7 +40,7 @@ def modelAVO(Vp1, Vp2, Vs1, Vs2, rho1, rho2, wavelet,
 
   # Convolve with wavelet to produce seismic amplitude trace
   for i in range(n_sample_angle):
-    x[:,i] = np.convolve(x[:,i], w, 'same')
+    x[:,i] = np.convolve(x[:,i], wavelet, 'same')
 
   # Plot CMP gather response
   plt.subplot(1,2,1)
