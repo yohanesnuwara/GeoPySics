@@ -1,3 +1,7 @@
+import pandas as pd
+import matplotlib.pyplot as plt
+import numpy as np
+
 def AkiRichards(Vp1, Vp2, Vs1, Vs2, rho1, rho2, theta):
   delta_Vp = Vp2 - Vp1
   delta_Vs = Vs2 - Vs1
