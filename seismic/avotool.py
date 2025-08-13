@@ -2,6 +2,8 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import numpy as np
 
+from mpl_toolkits.mplot3d import Axes3D 
+
 def AkiRichards(Vp1, Vp2, Vs1, Vs2, rho1, rho2, theta):
   delta_Vp = Vp2 - Vp1
   delta_Vs = Vs2 - Vs1
@@ -98,20 +100,33 @@ def extract_geobody(cube, value, range_x, range_y, range_z,
   yw = np.full(50, 9340)
   zw = np.linspace(t0, t1, 50)
 
+  # def make_ax(grid=False):
+  #   fig = plt.figure(figsize=figsize)
+  #   ax = fig.gca(projection='3d')
+  #   ax.set_title(title, pad=20)
+  #   ax.set_xlabel("X", labelpad=20)
+  #   ax.set_ylabel("Y", labelpad=20)
+  #   ax.set_zlabel("TWT", labelpad=20)
+  #   ax.grid(grid)
+  #   ax.invert_zaxis()
+  #   # ax.view_init(60,45)
+  #   ax.view_init(elev, azim)
+  #   return ax
+
   def make_ax(grid=False):
-    fig = plt.figure(figsize=figsize)
-    ax = fig.gca(projection='3d')
-    ax.set_title(title, pad=20)
-    ax.set_xlabel("X", labelpad=20)
-    ax.set_ylabel("Y", labelpad=20)
-    ax.set_zlabel("TWT", labelpad=20)
-    ax.grid(grid)
-    ax.invert_zaxis()
-    # ax.view_init(60,45)
-    ax.view_init(elev, azim)
-    return ax
+      fig = plt.figure(figsize=figsize)
+      ax = fig.add_subplot(111, projection='3d')
+      ax.set_title(title, pad=20)
+      ax.set_xlabel("X", labelpad=20)
+      ax.set_ylabel("Y", labelpad=20)
+      ax.set_zlabel("TWT", labelpad=20)
+      ax.grid(grid)
+      ax.invert_zaxis()
+      ax.view_init(elev, azim)
+      return ax                      
 
   ax = make_ax(True)
   ax.voxels(x, y, z, cube, facecolor='lime', shade=False, edgecolors='k', linewidth=0.2)
   # ax.plot(yw, xw, zw, lw=10)
   plt.show()
+
