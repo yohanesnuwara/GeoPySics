@@ -970,50 +970,6 @@ def rotate(origin, point, angle):
   yrot = oy + np.sin(np.deg2rad(angle)) * (px - ox) + np.cos(np.deg2rad(angle)) * (py - oy)
   return xrot, yrot
 
-def extract_geobody(cube, value, range_x, range_y, range_z, 
-                    figsize=(15,10), elev=90, azim=-90):
-  """
-  Extract geobody from an attribute cube
-
-  INPUT:
-
-  cube: Attribute cube object (3D array)
-  value: Threshold value of attribute
-  range_x: Min and max of x coordinate (Tuple)
-  range_y: Min and max of y coordinate (Tuple)
-  range_z: Min and max of z coordinate or TWT (Tuple)
-  elev, azim: Viewing elevation and azimuth
-
-  OUTPUT: 
-
-  Plot of extracted geobodies
-  """
-  cube[cube<value] = 0
-  cube[cube>value] = 1
-  cube = np.swapaxes(cube, 1, 0)
-  nx, ny, nz = cube.shape
-
-  x = np.linspace(range_x[0], range_x[1], nx+1)
-  y = np.linspace(range_y[0], range_y[1], ny+1)
-  z = np.linspace(range_z[0], range_z[1], nz+1)
-  x, y, z = np.meshgrid(y, x, z)
-
-  def make_ax(grid=False):
-    fig = plt.figure(figsize=figsize)
-    ax = fig.gca(projection='3d')
-    ax.set_xlabel("x")
-    ax.set_ylabel("y")
-    ax.set_zlabel("z")
-    ax.grid(grid)
-    ax.invert_zaxis()
-    # ax.view_init(60,45)
-    ax.view_init(elev, azim)
-    return ax
-
-  ax = make_ax(True)
-  ax.voxels(x, y, z, cube, facecolor='lime', shade=False, edgecolors='k', linewidth=0.2)
-  plt.show()
-
 def frequencySpectrum(cube, mini_range, dt=0.005, nfft=2**11, display=False):
   """
   Frequency Spectrum of a Mini-cube using Fast Fourier Transform
