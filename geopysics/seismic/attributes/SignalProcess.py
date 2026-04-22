@@ -12,7 +12,7 @@ import dask.array as da
 import numpy as np
 from scipy import ndimage as ndi
 from scipy import signal
-import util
+import geopysics.seismic.attributes.util as util
 
 
 

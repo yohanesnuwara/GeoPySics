@@ -11,8 +11,8 @@ Dip & Azimuth Calculations for Seismic Data
 import numpy as np
 import dask.array as da
 from scipy import ndimage as ndi
-import util
-from SignalProcess import SignalProcess as sp
+import geopysics.seismic.attributes.util as util
+from geopysics.seismic.attributes.SignalProcess import SignalProcess as sp
 
 
 class DipAzm():
