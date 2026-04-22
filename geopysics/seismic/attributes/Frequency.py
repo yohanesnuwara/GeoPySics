@@ -11,7 +11,7 @@ Frequency attributes for Seismic data
 import dask.array as da
 import numpy as np
 from scipy import signal
-import util
+import geopysics.seismic.attributes.util as util
 
 
 

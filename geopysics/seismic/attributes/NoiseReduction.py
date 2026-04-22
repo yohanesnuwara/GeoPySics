@@ -11,7 +11,7 @@ Noise Reduction attributes for Seismic Data
 import dask.array as da
 import numpy as np
 from scipy import ndimage as ndi
-import util
+import geopysics.seismic.attributes.util as util
 
 
 

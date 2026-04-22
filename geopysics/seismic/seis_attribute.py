@@ -92,7 +92,7 @@ def sliceAttribute(cube, output='2d', type='il',
   import matplotlib.pyplot as plt
   import segyio
 
-  from seistool import sliceCube
+  from geopysics.seismic.seistool import sliceCube
 
   from CompleTrace import ComplexAttributes
   from DipAzm import DipAzm
