@@ -1,3 +1,5 @@
+import numpy as np
+
 def Ricker(f, t):
     assert len(f) == 1, 'Ricker wavelet needs 1 frequency as input'
     # f = f[0]
